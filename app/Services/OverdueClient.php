@@ -11,12 +11,12 @@ use Throwable;
 
 class OverdueClient
 {
-    private function http(): PendingRequest
+    private function http(?int $timeout = null): PendingRequest
     {
         return Http::baseUrl(config('overdue.url'))
             ->withHeaders(['X-Service-Key' => (string) config('overdue.key')])
             ->acceptJson()
-            ->timeout(config('overdue.timeout'));
+            ->timeout($timeout ?? (int) config('overdue.timeout'));
     }
 
     // Marks past-due tasks as OVERDUE. A failure here must not break reads.
@@ -33,7 +33,7 @@ class OverdueClient
     public function validateTransition(int $taskId, string $newStatus, string $role): array
     {
         try {
-            $response = $this->http()->post('/api/tasks/validate-transition', [
+            $response = $this->http((int) config('overdue.transition_timeout'))->post('/api/tasks/validate-transition', [
                 'task_id' => $taskId,
                 'new_status' => $newStatus,
                 'role' => $role,

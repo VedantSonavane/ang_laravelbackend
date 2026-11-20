@@ -78,7 +78,7 @@ Task statuses are `TODO`, `IN_PROGRESS`, `DONE`, and `OVERDUE`; priorities are `
 
 ### Demo accounts
 
-The seeder creates these local demo users. Passwords are hashed by the User model before being stored.
+The seeder creates these demo users, both locally and on the live deployment. Passwords are hashed by the User model before being stored.
 
 | Role | Email | Password |
 | --- | --- | --- |
@@ -89,6 +89,25 @@ The seeder creates these local demo users. Passwords are hashed by the User mode
 | User | [rohan@example.com](mailto:rohan@example.com) | `Rohan@123` |
 
 These are development/test credentials only. Do not use them in production or reuse their passwords for real accounts.
+
+### Seeded demo data
+
+The seeder creates 6 projects and 26 tasks spread across the accounts above, so each login shows something different.
+
+| Account | Role | Assigned tasks | Overdue | Projects visible |
+| --- | --- | --- | --- | --- |
+| admin@example.com | Admin | all 26 | all overdue tasks | all 6 |
+| user@example.com | User | 6 | 1 | 4 (no Internal Tools) |
+| aarav@example.com | User | 6 | 3 | 4 (no Internal Tools) |
+| meera@example.com | User | 6 | 1 | 5 (all except Archive Cleanup) |
+| rohan@example.com | User | 7 | 1 | 4 (no Customer Support Portal) |
+
+Things worth trying:
+
+- A regular user only sees projects that contain a task assigned to them, and only their own tasks inside each project. Only the admin sees the empty "Archive Cleanup" project and the unassigned task "Choose hosting plan".
+- Overdue tasks (past due and not `DONE`) are locked for regular users: they cannot move them to `IN_PROGRESS` or close them. Only the admin can close them. Example: `user@example.com` has "Write API docs"; `aarav@example.com` has three overdue tasks.
+- Meera's "Launch email draft" is due today, so it is **not** overdue.
+- Rohan's "Set up CI pipeline" is already stored as `OVERDUE`; the others become `OVERDUE` on the next sync.
 
 ## Django overdue-service integration
 
@@ -170,3 +189,24 @@ tests/            Automated tests
 - Laravel Sanctum
 - MySQL (shared with the Django overdue service)
 - PHPUnit for tests
+
+## Live deployment
+
+| Piece | URL | Health check |
+| --- | --- | --- |
+| Frontend (React, Vercel) | https://ang-reactfrontend.vercel.app | open the site |
+| API (Laravel, Render) | https://ang-laravelbackend.onrender.com/api | https://ang-laravelbackend.onrender.com/up |
+| Overdue service (Django, Render) | https://ang-djangooverdue.onrender.com | https://ang-djangooverdue.onrender.com/health |
+
+```bash
+curl -i https://ang-laravelbackend.onrender.com/up
+curl https://ang-djangooverdue.onrender.com/health
+```
+
+Hosting is on free tiers, so the first request after a period of inactivity can take about a minute while the services wake up. Log in with the demo accounts above.
+
+## Design notes
+
+- Django runs as a backend rules service. Laravel calls it over HTTP to synchronize overdue tasks and to validate every status change.
+- Laravel and Django share one MySQL database. Laravel owns the schema; Django maps the `tasks` table with `managed = False`.
+- An overdue task cannot be reopened (to `TODO` or `IN_PROGRESS`), because the next sync would mark it `OVERDUE` again. It can only be closed (`DONE`), and only by an admin.
