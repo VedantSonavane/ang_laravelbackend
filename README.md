@@ -41,12 +41,12 @@ Administrators can see all projects and tasks. Regular users see projects/tasks 
 
 ### Default database and setup
 
-The default connection is SQLite. Laravel uses `database/database.sqlite` unless `DB_DATABASE` or `DB_URL` overrides it. The SQLite database file is local runtime data; migrations and seeders are the portable, tracked source of the schema and sample records.
+The default connection is MySQL (database `task_manager`), the same database the Django overdue service reads. Migrations and seeders are the portable, tracked source of the schema and sample records.
 
 For a fresh local database:
 
 ```bash
-touch database/database.sqlite
+mysql -u root -e "CREATE DATABASE IF NOT EXISTS task_manager;"
 php artisan migrate --seed
 ```
 
@@ -60,7 +60,7 @@ php artisan migrate:fresh --seed
 
 **Warning:** `migrate:fresh` drops every table in the configured database. Use it only when you are certain the selected database contains no data you need.
 
-SQLite is convenient for local development. For another supported database, configure the corresponding `DB_CONNECTION` and connection variables in the local `.env`, create the database, and run migrations. Do not commit production connection details.
+Set your local MySQL credentials in `.env`. Do not commit production connection details.
 
 ### Main tables
 
@@ -97,7 +97,7 @@ The Laravel API calls a separate Django service to synchronize overdue task stat
 ```env
 DJANGO_URL=http://127.0.0.1:8001
 DJANGO_SERVICE_KEY=your-local-service-key
-DJANGO_TIMEOUT=90
+DJANGO_TIMEOUT=10
 ```
 
 The shared key must match the Django service configuration and should remain private. Laravel sends it in the `X-Service-Key` header. A sync failure is logged without blocking project/task reads. A status-transition validation failure returns an error instead of accepting an unverified change.
@@ -107,7 +107,7 @@ The shared key must match the Django service configuration and should remain pri
 ### Requirements
 
 - PHP 8.3 or later and Composer
-- SQLite with the PHP SQLite extension for the default setup
+- MySQL 8 (shared with the Django overdue service)
 - Node.js and npm for compiling the optional Vite assets
 - The Django overdue service for overdue synchronization and status validation
 
@@ -119,7 +119,7 @@ From this directory:
 composer install
 cp .env.example .env
 php artisan key:generate
-touch database/database.sqlite
+mysql -u root -e "CREATE DATABASE IF NOT EXISTS task_manager;"
 php artisan migrate --seed
 php artisan serve --host=127.0.0.1 --port=8000
 ```
@@ -168,5 +168,5 @@ tests/            Automated tests
 - PHP 8.3+
 - Laravel 13
 - Laravel Sanctum
-- SQLite by default; Laravel supports other configured database drivers
+- MySQL (shared with the Django overdue service)
 - PHPUnit for tests
