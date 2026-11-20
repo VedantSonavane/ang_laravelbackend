@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\TaskStatus;
 use App\Exceptions\ApiException;
 use App\Models\Task;
 use App\Models\User;
@@ -28,6 +29,25 @@ class TaskService
         $task = Task::create($data + ['status' => 'TODO']);
 
         return $task->load(self::WITH);
+    }
+
+    public function update(Task $task, array $data): Task
+    {
+        $task->fill($data);
+
+        // An admin who moves an overdue task's due date to today or later takes it out of OVERDUE.
+        if ($task->status === TaskStatus::Overdue && $task->due_date->greaterThanOrEqualTo(today())) {
+            $task->status = TaskStatus::Todo;
+        }
+
+        $task->save();
+
+        return $task->load(self::WITH);
+    }
+
+    public function delete(Task $task): void
+    {
+        $task->delete();
     }
 
     public function changeStatus(Task $task, string $status, User $actor): Task

@@ -33,6 +33,18 @@ class ProjectService
         return $project->load('creator');
     }
 
+    public function update(Project $project, array $data): Project
+    {
+        $project->update($data);
+
+        return $project->load('creator');
+    }
+
+    public function delete(Project $project): void
+    {
+        $project->delete();
+    }
+
     public function showFor(Project $project, User $user): Project
     {
         $this->overdue->sync();

@@ -16,4 +16,14 @@ class TaskPolicy
     {
         return $user->isAdmin() || $task->assigned_to === $user->id;
     }
+
+    public function update(User $user, Task $task): bool
+    {
+        return $user->isAdmin();
+    }
+
+    public function delete(User $user, Task $task): bool
+    {
+        return $user->isAdmin();
+    }
 }

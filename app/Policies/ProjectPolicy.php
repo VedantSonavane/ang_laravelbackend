@@ -12,4 +12,14 @@ class ProjectPolicy
         return $user->isAdmin()
             || $project->tasks()->where('assigned_to', $user->id)->exists();
     }
+
+    public function update(User $user, Project $project): bool
+    {
+        return $user->isAdmin();
+    }
+
+    public function delete(User $user, Project $project): bool
+    {
+        return $user->isAdmin();
+    }
 }
