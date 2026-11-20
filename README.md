@@ -6,7 +6,7 @@ This repository contains the Laravel API for Taskboard, a project and task manag
 
 - Authenticates users with Laravel Sanctum bearer tokens.
 - Returns projects and tasks based on the signed-in user's role and task assignments.
-- Lets administrators create projects and tasks and assign tasks to users.
+- Lets administrators create, edit and delete projects and tasks, and assign tasks to users.
 - Lets administrators and task assignees request task status changes, subject to the overdue service's transition rules.
 - Synchronizes overdue task status with the Django service when project/task data is read.
 - Provides API validation, resource responses, and policy checks for protected operations.
@@ -31,8 +31,12 @@ The following paths are relative to `/api`:
 | `GET` | `/projects` | Authenticated | List visible projects |
 | `POST` | `/projects` | Administrator | Create a project |
 | `GET` | `/projects/{project}` | Authenticated and authorized | Get a project and its visible tasks |
+| `PUT`/`PATCH` | `/projects/{project}` | Administrator | Edit a project's name or description |
+| `DELETE` | `/projects/{project}` | Administrator | Delete a project and its tasks |
 | `GET` | `/tasks` | Authenticated | List visible tasks |
 | `POST` | `/tasks` | Administrator | Create a task |
+| `PUT`/`PATCH` | `/tasks/{task}` | Administrator | Edit a task's title, description, assignee, priority, due date or project |
+| `DELETE` | `/tasks/{task}` | Administrator | Delete a task |
 | `PATCH` | `/tasks/{task}/status` | Administrator or assignee | Request a task status change |
 
 Administrators can see all projects and tasks. Regular users see projects/tasks associated with their assignments. Authorization is enforced on the API, not only in the frontend.
@@ -210,3 +214,4 @@ Hosting is on free tiers, so the first request after a period of inactivity can 
 - Django runs as a backend rules service. Laravel calls it over HTTP to synchronize overdue tasks and to validate every status change.
 - Laravel and Django share one MySQL database. Laravel owns the schema; Django maps the `tasks` table with `managed = False`.
 - An overdue task cannot be reopened (to `TODO` or `IN_PROGRESS`), because the next sync would mark it `OVERDUE` again. It can only be closed (`DONE`), and only by an admin.
+- When an administrator edits an overdue task and moves its due date to today or later, the task returns to `TODO`, because it is no longer overdue. Status itself is never set through the edit endpoint. It only changes through `PATCH /tasks/{task}/status`, which the Django service validates. Regular users cannot edit or delete anything.
